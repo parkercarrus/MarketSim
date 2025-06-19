@@ -1,6 +1,6 @@
 #pragma once
 #include "order.hpp"
-#include "traders/class.hpp"
+#include "../traders/class.hpp"
 #include <memory>
 #include <vector>
 #include <queue>

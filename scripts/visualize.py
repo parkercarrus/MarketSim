@@ -2,9 +2,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-df = pd.read_csv('market_history.csv')
+df = pd.read_csv('../results/market_history.csv')
 
-pnl = pd.read_csv('avg_pnl.csv')
+pnl = pd.read_csv('../results/avg_pnl.csv')
 
 # price over Time
 plt.figure(figsize=(10, 4))
@@ -26,9 +26,26 @@ plt.xlabel('Seller Type')
 plt.ylabel('Buyer Type')
 plt.tight_layout()
 
-# histogram of avg_pnl by trader
+trader_types = pnl.iloc[:, 0]
+avg_pnls = pnl.iloc[:, 1] - 1000 # adjust for starting capital
+
+max_abs_pnl = max(abs(avg_pnls.min()), abs(avg_pnls.max()))
+margin = 50 
+
 plt.figure(figsize=(8, 4))
-plt.bar(pnl.iloc[:, 0], pnl.iloc[:, 1], color='skyblue', edgecolor='black')
+colors = ['#39FF14' if val >= 0 else 'red' for val in avg_pnls]
+bars = plt.bar(trader_types, avg_pnls, color=colors, edgecolor='black')
+
+for bar in bars:
+    yval = bar.get_height()
+    offset = 10 if yval >= 0 else -15
+    va = 'bottom' if yval >= 0 else 'top'
+    plt.text(bar.get_x() + bar.get_width() / 2, yval + offset, f'{yval:.0f}', 
+             ha='center', va=va, fontsize=9)
+
+plt.ylim(-max_abs_pnl - margin, max_abs_pnl + margin)
+
+plt.axhline(0, color='black', linewidth=1)
 plt.xlabel('Trader Type')
 plt.ylabel('Average PnL')
 plt.title('Average PnL by Trader Type')

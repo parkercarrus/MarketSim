@@ -1,3 +1,12 @@
+#pragma once
+#include "class.hpp"
+#include "../headers/utils.hpp"
+#include <random>
+#include <string>
+#include <vector>
+#include <algorithm>
+
+
 class MarketMaker : public Trader {
 public:
     virtual ~MarketMaker() noexcept override = default;

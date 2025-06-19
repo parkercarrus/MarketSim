@@ -12,6 +12,8 @@ Agent Types
 - **Mean Reverters**: Buy when short MA < long MA, sell when short MA > long MA.
 - **Momentum Traders**: Buy when short MA > long MA, sell when short MA < long MA.
 
+Run
 ```
-g++ -std=c++17 main.cpp market.cpp -o market && ./market && python visualize.py
+cd src
+g++ -std=c++17 main.cpp market.cpp -o market && ./market && python3 ../scripts/visualize.py
 ```

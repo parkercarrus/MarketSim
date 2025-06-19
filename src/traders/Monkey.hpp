@@ -1,6 +1,6 @@
 #pragma once
 #include "class.hpp"
-#include "../utils.hpp"
+#include "../headers/utils.hpp"
 #include <random>
 #include <string>
 

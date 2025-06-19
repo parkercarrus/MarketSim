@@ -1,22 +1,21 @@
 #pragma once
 #include "class.hpp"
-#include "../utils.hpp"
+#include "../headers/utils.hpp"
 #include <random>
 #include <string>
 #include <vector>
 #include <algorithm>
 
-
-class MomentumTrader : public Trader {
+class MeanReverter : public Trader {
 public:
-    virtual ~MomentumTrader() noexcept override = default;
+    virtual ~MeanReverter() noexcept override = default;
     int short_ma_window;
     int long_ma_window;
 
-    MomentumTrader(int id, int short_maw, int long_maw)
+    MeanReverter(int id, int short_maw, int long_maw)
         : short_ma_window(short_maw), long_ma_window(long_maw) {
         trader_id = id;
-        this-> trader_type = "Momentum Trader";
+        trader_type = "Mean Reverter";
     }
 
     double ma(const std::vector<double>& price_history, int ma_window) {
@@ -30,15 +29,16 @@ public:
     }
 
     Order make_order(double market_price, const std::vector<double>& price_history, int timestep) override {
-        if (cash < market_price) return Order{"HOLD", market_price, trader_id, timestep, trader_type};
-        
-        if (price_history.size() < long_ma_window)
+        if (cash < market_price)
+            return Order{"HOLD", market_price, trader_id, timestep, trader_type};
+
+        if (price_history.size() < std::max(short_ma_window, long_ma_window))
             return Order{"HOLD", market_price, trader_id, timestep, trader_type};
 
         double short_ma = ma(price_history, short_ma_window);
         double long_ma = ma(price_history, long_ma_window);
 
-        if (short_ma > long_ma) {
+        if (short_ma < long_ma) {
             return Order{"BUY", market_price, trader_id, timestep, trader_type};
         } else {
             return Order{"SELL", market_price, trader_id, timestep, trader_type};

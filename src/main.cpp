@@ -1,8 +1,8 @@
-#include "market.hpp"
+#include "headers/market.hpp"
 #include "traders/Monkey.hpp"
 #include "traders/MarketMaker.hpp"
 #include "traders/MeanReverter.hpp"
-#include "utils.hpp"
+#include "headers/utils.hpp"
 #include <iostream>
 #include <variant>
 
@@ -23,10 +23,10 @@ void print_market_history(std::vector<OrderStorage> market_history) {
 }
 
 int main() {
-    MonkeyInit monkeys = MonkeyInit{2, 0.02};                      // Slightly more monkeys and more noise
-    MarketMakerInit market_makers = MarketMakerInit{5, 1.0, 0.04}; // Fewer MM, tighter presence
-    MeanReverterInit mean_reverters = MeanReverterInit{10, 10, 100}; // Faster response
-    MomentumTraderInit momentum_traders = MomentumTraderInit{10, 10, 100}; // More sensitive to trends
+    MonkeyInit monkeys = MonkeyInit{2, 0.02};                    
+    MarketMakerInit market_makers = MarketMakerInit{5, 1.0, 0.04}; 
+    MeanReverterInit mean_reverters = MeanReverterInit{10, 10, 100};
+    MomentumTraderInit momentum_traders = MomentumTraderInit{10, 10, 100};
 
     int ticks = 100000;
 
@@ -35,11 +35,11 @@ int main() {
         market.tick();
     }
     print_market_history(market.market_history);
-    std::string orders_export_string = "market_history.csv";
+    std::string orders_export_string = "../results/market_history.csv";
     export_csv_orders(market.market_history, orders_export_string);
     
     auto traders = market.traders;
-    std::string pnl_export_string = "avg_pnl.csv";
+    std::string pnl_export_string = "../results/avg_pnl.csv";
     export_csv_pnl(traders, pnl_export_string, market.market_price);
     market.print_trader_positions();
 }

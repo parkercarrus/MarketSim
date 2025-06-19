@@ -1,9 +1,9 @@
-#include "market.hpp"
+#include "headers/market.hpp"
 #include "traders/MarketMaker.hpp"
 #include "traders/Monkey.hpp"
 #include "traders/MeanReverter.hpp"
 #include "traders/MomentumTrader.hpp"
-#include "utils.hpp"
+#include "headers/utils.hpp"
 
 Market::Market(MonkeyInit monkey, MarketMakerInit mmaker, MeanReverterInit mreverter, MomentumTraderInit momentumtrader) {
     auto num_monkeys = monkey.num_monkeys;
