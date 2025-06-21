@@ -1,5 +1,5 @@
 #pragma once
-#include "class.hpp"
+#include "base.hpp"
 #include "../headers/utils.hpp"
 #include <random>
 #include <string>
@@ -13,11 +13,14 @@ public:
     int short_ma_window;
     int long_ma_window;
 
-    MomentumTrader(int id, int short_maw, int long_maw)
+    MomentumTrader(int id, int short_maw, int long_maw, std::shared_ptr<BetSizer> sizer)
         : short_ma_window(short_maw), long_ma_window(long_maw) {
         trader_id = id;
-        this-> trader_type = "Momentum Trader";
-    }
+        trader_type = "Momentum Trader";
+        betsizer = std::move(sizer);
+        position = 1000;
+        }
+        
 
     double ma(const std::vector<double>& price_history, int ma_window) {
         int n = price_history.size();
@@ -28,20 +31,36 @@ public:
         }
         return sum / (n - start);
     }
+    
+    double expected_price(double market_price, double short_ma, double long_ma) {
+        int lookahead_ticks = 1000;
+        double ma_slope = (short_ma - long_ma) / (long_ma_window - short_ma_window);
+        ma_slope = std::clamp(ma_slope, -0.01, 0.01);
+        return market_price + (market_price * ma_slope * lookahead_ticks);
+    }
 
     Order make_order(double market_price, const std::vector<double>& price_history, int timestep) override {
-        if (cash < market_price) return Order{"HOLD", market_price, trader_id, timestep, trader_type};
-        
-        if (price_history.size() < long_ma_window)
-            return Order{"HOLD", market_price, trader_id, timestep, trader_type};
+        if (price_history.size() < long_ma_window) {
+            return Order{"HOLD", market_price, trader_id, timestep, trader_type, 0};
+        }
 
         double short_ma = ma(price_history, short_ma_window);
         double long_ma = ma(price_history, long_ma_window);
 
+        double projected_price = expected_price(market_price, short_ma, long_ma);
+        double confidence = 1; // Replace with real logic if desired
+        double position_size = calculate_position_size(market_price, projected_price, confidence);
+        
         if (short_ma > long_ma) {
-            return Order{"BUY", market_price, trader_id, timestep, trader_type};
-        } else {
-            return Order{"SELL", market_price, trader_id, timestep, trader_type};
+            if (cash >= market_price * position_size) {
+                return Order{"BUY", market_price, trader_id, timestep, trader_type, position_size};
+            }
+        } else {  // SELL signal
+            if (position >= position_size) {
+                return Order{"SELL", market_price, trader_id, timestep, trader_type, position_size};
+            }
         }
+
+        return Order{"HOLD", market_price, trader_id, timestep, trader_type, 0};
     }
 };

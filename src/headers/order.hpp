@@ -7,6 +7,7 @@ struct Order {
     int trader_id;
     int timestep;
     std::string trader_type;
+    double position_size;
 };
 
 struct OrderPriceMin {

@@ -4,6 +4,10 @@
 #include "traders/MeanReverter.hpp"
 #include "traders/MomentumTrader.hpp"
 #include "headers/utils.hpp"
+#include "betsize/fractional.hpp"
+#include "betsize/kelly.hpp"
+    #include <cassert>
+
 
 Market::Market(MonkeyInit monkey, MarketMakerInit mmaker, MeanReverterInit mreverter, MomentumTraderInit momentumtrader) {
     auto num_monkeys = monkey.num_monkeys;
@@ -14,42 +18,51 @@ Market::Market(MonkeyInit monkey, MarketMakerInit mmaker, MeanReverterInit mreve
     auto mmaker_spread = mmaker.spread;
 
     auto num_mreverters = mreverter.num_mreverers;
-    auto mreverter_short_window = mreverter.short_ma_window; 
+    auto mreverter_short_window = mreverter.short_ma_window;
     auto mreverter_long_window = mreverter.long_ma_window;
 
     auto num_momentumtraders = momentumtrader.num_momtraders;
-    auto momentum_short_window = momentumtrader.short_ma_window; 
+    auto momentum_short_window = momentumtrader.short_ma_window;
     auto momentum_long_window = momentumtrader.long_ma_window;
-    
+
     int global_id = 0;
 
     for (int i = 0; i < num_monkeys; ++i, ++global_id) {
-        auto trader = std::make_shared<MonkeyTrader>(global_id, monkey_noise_weight);
+        auto sizer = std::make_shared<Fractional>(0.01, 1.0); 
+        auto trader = std::make_shared<MonkeyTrader>(global_id, monkey_noise_weight, sizer);
         trader_map[global_id] = trader;
         traders.push_back(trader);
     }
 
     for (int i = 0; i < num_mmakers; ++i, ++global_id) {
-        auto trader = std::make_shared<MarketMaker>(global_id, mmaker_price, mmaker_spread);
+        auto sizer = std::make_shared<Fractional>(0.01, 1.0);
+        auto trader = std::make_shared<MarketMaker>(global_id, mmaker_price, mmaker_spread, sizer);
         trader_map[global_id] = trader;
         traders.push_back(trader);
     }
 
     for (int i = 0; i < num_mreverters; ++i, ++global_id) {
-        auto trader = std::make_shared<MeanReverter>(global_id, mreverter_short_window, mreverter_long_window);
+        std::shared_ptr<BetSizer> sizer = mreverter.sizers.at(i);  
+        auto trader = std::make_shared<MeanReverter>(
+            global_id, mreverter_short_window, mreverter_long_window, sizer
+        );
         trader_map[global_id] = trader;
         traders.push_back(trader);
     }
 
     for (int i = 0; i < num_momentumtraders; ++i, ++global_id) {
-        auto trader = std::make_shared<MomentumTrader>(global_id, momentum_short_window, momentum_long_window);
+        std::shared_ptr<BetSizer> sizer = momentumtrader.sizers.at(i);  
+        auto trader = std::make_shared<MomentumTrader>(
+            global_id, momentum_short_window, momentum_long_window, sizer
+        );
         trader_map[global_id] = trader;
         traders.push_back(trader);
     }
 
-
     std::shuffle(traders.begin(), traders.end(), gen);
 }
+
+
 
 void Market::tick() {
     for (const auto& trader : traders) {
@@ -62,9 +75,10 @@ void Market::tick() {
 }
 
 void Market::process_orders() {
+
     while (!buys.empty() && !sells.empty() &&
            buys.top().price >= sells.top().price) {
-            
+
         Order buy = buys.top();
         Order sell = sells.top();
         if (buy.trader_id == sell.trader_id) {
@@ -74,8 +88,9 @@ void Market::process_orders() {
             continue;
         }
         double order_price = (buy.price + sell.price) / 2.0;
-        double quantity = 1;
-
+        
+        double quantity = std::min(buy.position_size, sell.position_size);
+        
         auto buyer = trader_map[buy.trader_id];
         auto seller = trader_map[sell.trader_id];
         
@@ -91,11 +106,21 @@ void Market::process_orders() {
             {"buyer_type", buy.trader_type},
             {"seller_type", sell.trader_type}
         });
+        
+        price_history.push_back(order_price);
 
         buys.pop();
         sells.pop();
 
-        price_history.push_back(order_price);
+        if (buy.position_size > quantity) {
+            buy.position_size -= quantity;
+            buys.push(buy);
+        }
+
+        if (sell.position_size > quantity) {
+            sell.position_size -= quantity;
+            sells.push(sell);
+        }
     }
 }
 

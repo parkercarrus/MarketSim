@@ -1,5 +1,5 @@
 #pragma once
-#include "class.hpp"
+#include "base.hpp"
 #include "../headers/utils.hpp"
 #include <random>
 #include <string>
@@ -9,24 +9,28 @@ public:
     virtual ~MonkeyTrader() noexcept override = default;
     double noise_weight;
 
-    MonkeyTrader(int id, double weight) { 
+    MonkeyTrader(int id, double weight, std::shared_ptr<BetSizer> sizer) { 
         this-> trader_id = id; 
         this-> noise_weight = weight;
         this-> trader_type = "Monkey";
+        betsizer = std::move(sizer);
+        position = 1000;
     }
+
     Order make_order(double market_price, const std::vector<double>& price_history, int timestep) override {
         std::string order_type = rand_order_type();
         double price = rand_centered_price(market_price, noise_weight);
 
-        if (order_type == "BUY" && cash < price) {
-            return Order{"HOLD", market_price, trader_id, timestep, trader_type};
+        double position_size = 1;
+
+        if (order_type == "BUY" && cash < price * position_size) {
+            return Order{"HOLD", market_price, trader_id, timestep, trader_type, 0};
         } 
 
-        if (order_type == "SELL" && position < 1) {
-            return Order{"HOLD", market_price, trader_id, timestep, trader_type};
+        if (order_type == "SELL" && position < position_size) {
+            return Order{"HOLD", market_price, trader_id, timestep, trader_type, 0};
         }
-    
-        return Order{order_type, price, trader_id, timestep, trader_type};
-    }
 
+        return Order{order_type, price, trader_id, timestep, trader_type, position_size};
+    }
 };
