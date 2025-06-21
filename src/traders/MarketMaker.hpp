@@ -18,11 +18,10 @@ public:
         trader_id = id;
         trader_type = "Market Maker";
         betsizer = std::move(sizer);
-        position = 1000;
     }
 
-    Order make_order(double market_price, const std::vector<double>& price_history, int timestep) override {
-        double dynamic_fundamental = base_price; //+ 0.5 * std::sin(0.0001 * timestep);
+    Order make_order(double market_price, const std::vector<MarketTick>& tick_history, int timestep) override {
+        double dynamic_fundamental = base_price; // + 0.5 * std::sin(0.00001 * timestep);
         double current_spread = spread * market_price;
         double bid = std::max(0.01, dynamic_fundamental - current_spread / 2);
         double ask = std::max(0.01, dynamic_fundamental + current_spread / 2);
@@ -38,4 +37,21 @@ public:
 
         return Order{"HOLD", market_price, trader_id, timestep, trader_type, 0};
     }
+
+    std::string get_type() const override { 
+        return "Market Maker"; 
+    }
+
+    double get_fundamental_price() const { 
+        return base_price; 
+    }
+
+    double get_spread() const { 
+        return spread; 
+    }
+
+    std::shared_ptr<BetSizer> get_sizer() const override { 
+        return betsizer; 
+    }
+
 };

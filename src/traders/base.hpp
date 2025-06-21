@@ -10,9 +10,9 @@ protected:
 public:
     int trader_id;
     virtual ~Trader() = default;
-    virtual Order make_order(double market_price, const std::vector<double>& price_history, int timestep) = 0;
+    virtual Order make_order(double market_price, const std::vector<MarketTick>& tick_history, int timestep) = 0;
     double cash = 1000;
-    double position = 1;
+    double position = 1000;
     std::string trader_type;
 
     virtual double calculate_position_size(double market_price, double expected_price, double confidence) { 
@@ -35,8 +35,11 @@ public:
         return (position*market_price + cash);
     }
 
+    virtual std::shared_ptr<BetSizer> get_sizer() const = 0;
 
-    std::string get_type() const { return trader_type; }
+    virtual std::string get_type() const = 0;
+
+    int get_id() { return trader_id; }
 };
 
 struct MarketMakerInit {

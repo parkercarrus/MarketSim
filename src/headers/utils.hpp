@@ -7,6 +7,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include "order.hpp"
 
 inline std::vector<std::string> order_types = {"BUY", "SELL", "HOLD"};
 inline std::random_device rd;
@@ -22,30 +23,70 @@ inline double rand_centered_price(double market_price, double noise_weight) {
     return market_price + (noise_weight * market_price * price_noise(gen));
 }
 
-inline void export_csv_orders(const std::vector<OrderStorage>& market_history, const std::string& filename) {
+inline void export_trader_counts(const std::vector<TraderCount>& trader_counts, const std::string& filename) {
     std::ofstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Error: Could not open file for writing.\n";
         return;
     }
 
-    file << "timestep,price,buyer_id,seller_id,buyer_type,seller_type\n";
+    file << "timestep,Monkeys,MarketMakers,MomentumTraders,MeanReverters\n";
 
-    for (const auto& transaction : market_history) {
-        int timestep = std::get<int>(transaction.at("timestep"));
-        double price = std::get<double>(transaction.at("price"));
-        int buyer_id = std::get<int>(transaction.at("buyer_id"));
-        int seller_id = std::get<int>(transaction.at("seller_id"));
-        std::string buyer_type = std::get<std::string>(transaction.at("buyer_type"));
-        std::string seller_type = std::get<std::string>(transaction.at("seller_type"));
-
-        file << timestep << "," << price << "," << buyer_id << "," << seller_id << "," << buyer_type << "," << seller_type << "\n";
+    for (const auto& counts : trader_counts) {
+        file << counts.timestep << ","
+             << counts.monkeys << ","
+             << counts.marketmakers << ","
+             << counts.momentumtraders << ","
+             << counts.meanreverters << "\n";
     }
 
     file.close();
-    std::cout << "Market history exported to " << filename << std::endl;
+    std::cout << "Trader count history exported to " << filename << std::endl;
 }
 
+inline void export_csv_tick_history(const std::vector<MarketTick>& tick_history, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file for writing.\n";
+        return;
+    }
+
+    file << "timestep,last_price,vwap,mid_price,volume\n";
+
+    for (const auto& tick : tick_history) {
+        file << tick.timestep << ","
+             << tick.last_price << ","
+             << tick.vwap << ","
+             << tick.mid_price << ","
+             << tick.volume << "\n";
+    }
+
+    file.close();
+    std::cout << "Tick history exported to " << filename << std::endl;
+}
+
+inline void export_csv_orders(const std::vector<Trade>& trade_history, const std::string& filename) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Error: Could not open file for writing.\n";
+        return;
+    }
+
+    file << "timestep,price,quantity,buyer_id,seller_id,buyer_type,seller_type\n";
+
+    for (const auto& trade : trade_history) {
+        file << trade.timestep << ","
+             << trade.price << ","
+             << trade.quantity << ","
+             << trade.buyer_id << ","
+             << trade.seller_id << ","
+             << trade.buyer_type << ","
+             << trade.seller_type << "\n";
+    }
+
+    file.close();
+    std::cout << "Trade history exported to " << filename << std::endl;
+}
 
 inline void export_csv_pnl(const std::vector<std::shared_ptr<Trader>>& traders, const std::string& filename, double market_price) {
     std::unordered_map<std::string, std::pair<double, int>> pnl_map;

@@ -14,10 +14,9 @@ public:
         this-> noise_weight = weight;
         this-> trader_type = "Monkey";
         betsizer = std::move(sizer);
-        position = 1000;
     }
 
-    Order make_order(double market_price, const std::vector<double>& price_history, int timestep) override {
+    Order make_order(double market_price, const std::vector<MarketTick>& tick_history, int timestep) override {
         std::string order_type = rand_order_type();
         double price = rand_centered_price(market_price, noise_weight);
 
@@ -32,5 +31,11 @@ public:
         }
 
         return Order{order_type, price, trader_id, timestep, trader_type, position_size};
+    }
+
+    std::string get_type() const override { return "Monkey"; }
+    double get_noise_weight() const { return noise_weight; }
+    std::shared_ptr<BetSizer> get_sizer() const override {
+        return betsizer;
     }
 };
