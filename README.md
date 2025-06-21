@@ -14,8 +14,10 @@ Agent Types
 
 Run
 ```
+
 cd src
 g++ -std=c++17 main.cpp market.cpp -o market && ./market && python3 ../scripts/visualize.py
+
 ```
 
 ![Balance between traders](images/traderbalance.png)
