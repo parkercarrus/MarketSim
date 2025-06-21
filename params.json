@@ -1,0 +1,33 @@
+{
+  "initial_price": 1.0,
+  "random_sizers": true,
+  "evolution_ticks": 1000,
+  "kill_percentage": 10,
+
+  "monkeys": {
+    "num_monkeys": 2,
+    "noise_weight": 0.01
+  },
+
+  "mmakers": {
+    "num_mmakers": 4,
+    "fundamental_price": 1.0,
+    "spread": 0.01,
+    "random_sizers": true
+  },
+
+  "mreverters": {
+    "num_mreverers": 15,
+    "short_ma_window": 50,
+    "long_ma_window": 200,
+    "random_sizers": true
+  },
+
+  "momtraders": {
+    "num_momtraders": 15,
+    "short_ma_window": 50,
+    "long_ma_window": 200,
+    "random_sizers": true
+
+  }
+}

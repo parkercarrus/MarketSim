@@ -1,9 +1,11 @@
 *.csv
 *.json
+!params.json
 *.exe
 *.out
 *.bin
 *.dll
 *.so
 *.dylib
+*.prof
 market
