@@ -20,4 +20,4 @@ g++ -std=c++17 main.cpp market.cpp -o market && ./market && python3 ../scripts/v
 
 ```
 
-![Balance between traders](images/chart.png)
+![Endogenous Market Behavior](images/chart.png)
