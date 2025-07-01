@@ -16,7 +16,7 @@ struct Trade {
     int buyer_id;
     int seller_id;
     int timestep;
-    std::string buyer_type;
+    std::string buyer_type; 
     std::string seller_type;
 };
 

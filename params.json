@@ -1,33 +1,37 @@
 {
-  "initial_price": 1.0,
+  "initial_price": 10.0,
   "random_sizers": true,
-  "evolution_ticks": 1000,
-  "kill_percentage": 10,
+  "evolve": true,
+  "evolution_ticks": 100,
+  "kill_percentage": 0.5,
+  "max_order_age": 20,
+
+  "write_every": 10,
 
   "monkeys": {
-    "num_monkeys": 2,
+    "num_monkeys": 10,
     "noise_weight": 0.01
   },
 
-  "mmakers": {
-    "num_mmakers": 4,
-    "fundamental_price": 1.0,
+  "market_makers": {
+    "num_mmakers": 5,
+    "fundamental_price": 10.0,
     "spread": 0.01,
     "random_sizers": true
   },
 
-  "mreverters": {
-    "num_mreverers": 15,
-    "short_ma_window": 50,
-    "long_ma_window": 200,
-    "random_sizers": true
+  "mean_reverters": {
+      "num_mreverters": 200,
+      "min_short": 10,
+      "max_short": 50,
+      "min_long": 100,
+      "max_long": 300
   },
-
-  "momtraders": {
-    "num_momtraders": 15,
-    "short_ma_window": 50,
-    "long_ma_window": 200,
-    "random_sizers": true
-
+  "momentum_traders": {
+      "num_momtraders": 70,
+      "min_short": 10,
+      "max_short": 50,
+      "min_long": 100,
+      "max_long": 300
   }
 }

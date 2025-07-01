@@ -1,29 +1,39 @@
 #include "headers/market.hpp"
-#include "headers/utils.hpp"
+#include "headers/init/init_state.hpp"
 #include <iostream>
-#include <gperftools/profiler.h>
+#include <chrono>
 
 int main() {
-    // ProfilerStart("profile.prof");    
-    InitialMarketState state = load_initial_state("../params.json");
+    try {
+        auto state = load_initial_state("../params.json");
+        Market market(state);
 
-    // Initialize market from state
-    Market market(state);
+        const int total_ticks = 50000;
+        auto start = std::chrono::high_resolution_clock::now();
 
-    int ticks = 80000;
-    for (int i = 0; i < ticks; ++i) {
-        market.tick();
+        for (int i = 0; i < total_ticks; ++i) {
+            market.tick();
+        }
+
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+        std::cout << "Simulation completed in " << elapsed.count() << " seconds." << std::endl;
+
+        market.print_trader_positions();
+        
+        export_csv_orders(market.trade_history, "../results/trade_history.csv");
+
+        export_csv_pnl(market.traders, "../results/avg_pnl.csv", market.market_price);
+
+        export_csv_tick_history(market.tick_history, "../results/tick_history.csv");
+
+        export_trader_counts(market.trader_counts, "../results/trader_counts.csv");
+
+        market.print_trader_positions();
+    } catch (const std::exception& ex) {
+        std::cerr << "Fatal error: " << ex.what() << std::endl;
+        return 1;
     }
-
-    export_csv_orders(market.trade_history, "../results/trade_history.csv");
-
-    export_csv_pnl(market.traders, "../results/avg_pnl.csv", market.market_price);
-
-    export_csv_tick_history(market.tick_history, "../results/tick_history.csv");
-
-    export_trader_counts(market.trader_counts, "../results/trader_counts.csv");
-
-    market.print_trader_positions();
 
     return 0;
 }

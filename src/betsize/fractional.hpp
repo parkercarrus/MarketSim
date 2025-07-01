@@ -20,15 +20,6 @@ public:
     
     double get_bet_size(double market_price, double expected_price, double confidence, double capital) override {
         double num_shares = (fraction * capital) / market_price;
-        if (num_shares < min_bet) {
-            return 0;
-        } else if (num_shares*market_price > capital) {
-            if (capital / market_price > min_bet) {
-                return (capital / market_price); // bet the remainder
-             }                   
-        } else {
-            return num_shares;
-        }
         return num_shares;
     }
 };

@@ -20,13 +20,15 @@ public:
     }
 
     double get_bet_size(double market_price, double expected_price, double confidence, double capital) override {
-        double odds = std::abs((expected_price - market_price) / market_price); 
-        if (odds == 0.0) return 0.0; // no divide-by-zero
+        double edge = expected_price - market_price;
+        double odds = std::abs(edge / market_price);
 
-        double kelly = (odds * confidence - (1.0 - confidence)) / odds;
+        if (odds == 0.0 || confidence <= 0.5) return 0.0;
+
+        double kelly = std::clamp((confidence - (1.0 - confidence)) * odds, 0.0, 1.0); // simplified, bounded
         double bet = kelly_fraction * kelly * capital;
 
-        if (bet < min_bet || kelly <= 0.0) return 0.0;
-        return bet;
+        if (bet < min_bet) return 0.0;
+        return bet / market_price; // return shares
     }
 };

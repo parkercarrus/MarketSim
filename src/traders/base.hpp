@@ -10,9 +10,9 @@ protected:
 public:
     int trader_id;
     virtual ~Trader() = default;
-    virtual Order make_order(double market_price, const std::vector<MarketTick>& tick_history, int timestep) = 0;
-    double cash = 1000;
-    double position = 1000;
+    virtual Order make_order(double market_price, double best_bid, double best_ask, const std::vector<MarketTick>& tick_history, int timestep) = 0;
+    double cash = 100000;
+    double position = 10;
     std::string trader_type;
 
     virtual double calculate_position_size(double market_price, double expected_price, double confidence) { 
@@ -50,9 +50,13 @@ struct MarketMakerInit {
 };
 
 struct MeanReverterInit {
-    int num_mreverers;
+    int num_mreverters;
     int short_ma_window;
     int long_ma_window;
+    int min_short;
+    int max_short;
+    int min_long;
+    int max_long;
     std::vector<std::shared_ptr<BetSizer>> sizers;
 };
 
@@ -66,5 +70,9 @@ struct MomentumTraderInit {
     int num_momtraders;
     int short_ma_window;
     int long_ma_window;
+    int min_short;
+    int max_short;
+    int min_long;
+    int max_long;
     std::vector<std::shared_ptr<BetSizer>> sizers;
 };
