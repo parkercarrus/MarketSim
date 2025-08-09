@@ -1,35 +1,24 @@
 services:
-  api:
-    environment:
-      CORS_ORIGINS: "http://aitradingsim.com,http://www.aitradingsim.com"
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [frontend, backend]
 
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: marl-api
-    ports:
-      - "8000:8000"
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health').status==200 else sys.exit(1)"]
-      interval: 10s
-      timeout: 2s
-      retries: 5
+  frontend:
+    image: ghcr.io/${GH_OWNER}/aitradingsim-frontend:${IMAGE_TAG:-latest}
+    env_file: [.env.production]
     restart: unless-stopped
 
-  web:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: "http://aitradingsim.com:8000"
-        NEXT_PUBLIC_WS_URL: "ws://aitradingsim.com:8000/ws"
-    container_name: marl-web
-    environment:
-      PORT: "3000"
-    ports:
-      - "80:3000"     # serve site at http://aitradingsim.com
-      # if you also want direct :3000, add: "3000:3000"
-    depends_on:
-      api:
-        condition: service_healthy
+  backend:
+    image: ghcr.io/${GH_OWNER}/aitradingsim-backend:${IMAGE_TAG:-latest}
+    env_file: [.env.production]
     restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

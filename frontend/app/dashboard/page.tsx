@@ -13,8 +13,14 @@ import JSZip from "jszip";
 
 const DATA_KEYS = ["price", "volume", "volatility"];
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL!;
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? "/api";
+
+const WS_URL =
+  process.env.NEXT_PUBLIC_WS_URL ??
+  (typeof window !== "undefined"
+    ? `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`
+    : ""); 
 
 // -------- utils --------
 function decimate<T>(arr: T[], maxPoints: number): T[] {

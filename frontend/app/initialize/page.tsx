@@ -37,7 +37,9 @@ export default function InitializeSimulation() {
     return saved ? saved === "true" : false;
   });
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+  const API_URL =
+    process.env.NEXT_PUBLIC_API_URL ?? "/api";
+
 
   useEffect(() => {
     if (typeof window !== "undefined") {
