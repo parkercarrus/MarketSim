@@ -15,6 +15,11 @@ def origins_from_env() -> List[str]:
         "http://localhost:3000",
         "http://localhost:3001",
         "http://127.0.0.1:3000",
+
+        "https://aitradingsim.com",
+        "https://www.aitradingsim.com",
+        "http://aitradingsim.com",
+        "http://www.aitradingsim.com",
     ]
     extra = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
     # de-dup while preserving order
