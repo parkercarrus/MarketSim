@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-const TITLE = "Artificial Intelligence Trading Simulator";
+const TITLE = "Multi-Agent Market Simulator";
 const SUB1 = "Market Simulation with Multi-Agent Reinforcement Learning";
 const SUB2 = "Can You Outsmart AI?";
 
@@ -44,21 +44,24 @@ export default function Home() {
             {/* CTA buttons */}
             <div className="flex flex-col items-center justify-center gap-2 pt-2">
             <div className="mb-4">
-              <Link href="/dashboard">
-              <Button className="rounded-xl px-5 py-2">Enter Simulation</Button>
+              <Link href={{ pathname: "/dashboard", query: { play: false } }}>
+              <Button className="rounded-xl px-5 py-2">Simulate</Button>
               </Link>
+                <Link href={{ pathname: "/dashboard", query: { play: true } }}>
+                <Button className="rounded-xl px-5 py-2 ml-4">Play</Button>
+                </Link>
               <span className="inline-block w-2" />
             </div>
             <div className="flex items-center justify-center gap-3">
               <Link href="/about">
               <Button
-                variant="outline"
-                className="rounded-xl px-5 py-2 border-zinc-300 bg-zinc-100 text-black"
+                variant="ghost"
+                className="rounded-xl px-5 py-2 border border-black"
               >
                 Learn More
               </Button>
               </Link>
-              <Link href="https://github.com/parkercarrus/marl" target="_blank" rel="noopener noreferrer">
+              <Link href="https://github.com/parkercarrus/trading-sim" target="_blank" rel="noopener noreferrer">
               <Button
                 variant="ghost"
                 className="rounded-xl px-5 py-2 border border-black"

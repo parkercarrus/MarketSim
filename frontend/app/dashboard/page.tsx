@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -20,7 +21,7 @@ const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ??
   (typeof window !== "undefined"
     ? `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`
-    : ""); 
+    : "");
 
 // -------- utils --------
 function decimate<T>(arr: T[], maxPoints: number): T[] {
@@ -72,6 +73,10 @@ function Modal({
 }
 
 export default function SimulationDashboard() {
+  const searchParams = useSearchParams();
+  const playParam = (searchParams.get("play") ?? "true").toLowerCase();
+  const playMode = playParam === "true"; // if false => analysis view (no user card)
+
   const [simulationRunning, setSimulationRunning] = useState(false);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(["price"]);
   const toggleMetric = (key: string) =>
@@ -97,6 +102,18 @@ export default function SimulationDashboard() {
   // modal state
   const [selectedTraderId, setSelectedTraderId] = useState<string | null>(null);
   const [traderModalOpen, setTraderModalOpen] = useState(false);
+
+  const [stateToken, setStateToken] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setStateToken(localStorage.getItem("last_state_token"));
+    }
+  }, []);
+
+  async function handleCopyToken() {
+  if (!stateToken) return;
+  await navigator.clipboard.writeText(stateToken);
+    }
 
   // initial params cache (from Initialize page: store `init_traders` there)
   const [initParamsById, setInitParamsById] = useState<Record<string, any>>({});
@@ -403,15 +420,17 @@ export default function SimulationDashboard() {
     );
   };
 
+  // --- Market stats (for play=false view) ---
   const totalVolume = trades.reduce((s, t) => s + (t.quantity || 0), 0);
   const vwap = totalVolume > 0 ? trades.reduce((s, t) => s + t.price * t.quantity, 0) / totalVolume : null;
   const firstPrice = fullData[0]?.price ?? null;
   const priceChangePct = latest && firstPrice ? ((latest.price - firstPrice) / firstPrice) * 100 : null;
   const sortedBidsTop10 = sortedBids.slice(0, 10);
   const sortedAsksTop10 = sortedAsks.slice(0, 10);
-  const liquidityDepth =
-    sortedBidsTop10.reduce((s, b) => s + b.quantity, 0) +
-    sortedAsksTop10.reduce((s, a) => s + a.quantity, 0);
+  const bidDepth = sortedBidsTop10.reduce((s, b) => s + b.quantity, 0);
+  const askDepth = sortedAsksTop10.reduce((s, a) => s + a.quantity, 0);
+  const liquidityDepth = bidDepth + askDepth;
+  const obImbalance = liquidityDepth > 0 ? (bidDepth - askDepth) / liquidityDepth : null;
   const recentVol =
     liveData.length > 1
       ? Math.sqrt(
@@ -419,8 +438,12 @@ export default function SimulationDashboard() {
             liveData.length
         )
       : null;
+  const prices = fullData.map(d => d.price).filter((p) => Number.isFinite(p));
+  const allTimeHigh = prices.length ? Math.max(...prices) : null;
+  const allTimeLow = prices.length ? Math.min(...prices) : null;
+  const mid = bestBid != null && bestAsk != null ? 0.5 * (bestBid + bestAsk) : null;
+  const spread = bestBid != null && bestAsk != null ? bestAsk - bestBid : null;
 
-  // NOTE: second Modal definition exists below in your original; keeping it to avoid broad refactors.
   function Modal({
     open,
     onClose,
@@ -461,8 +484,9 @@ export default function SimulationDashboard() {
     setSelectedTraderId(null);
   };
 
-  // Toggle handler
   const toggleParticipation = () => setUserParticipation((p) => !p);
+
+  const showUserTraderCard = playMode && userParticipation;
 
   return (
     <main className="min-h-screen bg-white text-black dark:bg-zinc-900 dark:text-white px-6 py-8 font-mono">
@@ -488,8 +512,10 @@ export default function SimulationDashboard() {
       {/* Controls */}
       <div className="flex justify-between mb-6">
         <div className="flex gap-4">
-          <Link href="/initialize">
-            <Button className="bg-blue-500 hover:bg-blue-600 border border-blue-600 text-white">Configure</Button>
+          <Link href={`/initialize?play=${playMode}`}>
+            <Button className="bg-blue-500 hover:bg-blue-600 border border-blue-600 text-white">
+              Configure
+            </Button>
           </Link>
 
           <Button
@@ -497,25 +523,47 @@ export default function SimulationDashboard() {
             className={`${simulationRunning ? "bg-red-500 hover:bg-red-700" : "bg-green-500 hover:bg-green-700"} text-white dark:text-black`}
           >
             {simulationRunning ? "Pause" : "Start"}
-            </Button>
-            <Button
+          </Button>
+          <Button
             variant="outline"
             onClick={handleReset}
             className={`bg-black border-black text-white hover:bg-gray-800 ${
               darkMode ? "bg-white border-white hover:bg-gray-200" : ""
             }`}
-            >
+          >
             Reset
-            </Button>
+          </Button>
 
-          <Button
+            <Button
             variant="outline"
             onClick={handleDownload}
             className="bg-gray-500 text-white border-gray-600 hover:bg-gray-600 dark:bg-gray-700 dark:text:white dark:border-gray-800 dark:hover:bg-gray-800"
-          >
+            >
             Download CSV
-          </Button>
+            </Button>
+            <div className="relative group mt-0.5">
+            <Button
+              variant="outline"
+              onClick={async (e) => {
+              if (!stateToken) return;
+              const btn = e.currentTarget;
+              btn.style.transition = "transform 0.12s";
+              btn.style.transform = "scale(0.95)";
+              await handleCopyToken();
+              setTimeout(() => {
+                btn.style.transform = "scale(1.05)";
+                setTimeout(() => {
+                btn.style.transform = "scale(1)";
+                }, 120);
+              }, 120);
+              }}
+              disabled={!stateToken}
+              className="text-xs px-3 py-1 h-8 border-gray-300 dark:border-gray-600"
+            >
+              Copy Token
+            </Button>
 
+            </div>
           <div className="flex-1" />
 
           {/* Chart options */}
@@ -549,9 +597,9 @@ export default function SimulationDashboard() {
       {/* Chart */}
       <Card className="border border-black dark:border-white mb-6 bg:white dark:bg-zinc-800">
         <CardContent className="pt-4">
-        <h2 className="text-xl font-semibold mb-2">
-          {selectedMetrics.length ? selectedMetrics.map(s => s.toUpperCase()).join(", ") : "No Series Selected"} Over Time {zoomOut ? "(Full)" : "(Recent)"}
-        </h2>
+          <h2 className="text-xl font-semibold mb-2">
+            {selectedMetrics.length ? selectedMetrics.map(s => s.toUpperCase()).join(", ") : "No Series Selected"} Over Time {zoomOut ? "(Full)" : "(Recent)"}
+          </h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
               <XAxis dataKey="time_step" axisLine={false} tickLine={false} tick={false} />
@@ -677,8 +725,8 @@ export default function SimulationDashboard() {
           </CardContent>
         </Card>
 
-        {/* User Trader (toggleable) */}
-        {userParticipation ? (
+        {/* Right-hand card: User Trader (play=true) OR Market Stats (play=false) */}
+        {showUserTraderCard ? (
           <Card className="border border-black dark:border:white bg:white dark:bg-zinc-900 h-[420px]">
             <CardContent className="pt-6 h-full flex flex-col md:flex-row items-stretch justify-between gap-8">
               <div className="flex-1 flex flex-col gap-4 items-center md:items-start justify-center">
@@ -735,18 +783,62 @@ export default function SimulationDashboard() {
           </Card>
         ) : (
           <Card className="border border-black dark:border:white bg:white dark:bg-zinc-900 h-[420px]">
-            <CardContent className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="font-semibold mb-2">User participation is OFF</div>
-                <Button variant="outline" onClick={() => setUserParticipation(true)}>
-                  Enable User Trader
-                </Button>
+            <CardContent className="pt-6 h-full">
+              <h2 className="text-xl font-semibold mb-4">Market Statistics</h2>
+              <div className="grid grid-cols-2 gap-x-10 gap-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Last Price</span>
+                  <span className="font-semibold tabular-nums">
+                    {latest?.price != null ? `$${Number(latest.price).toFixed(2)}` : "--"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Change (%)</span>
+                  <span className={`font-semibold tabular-nums ${priceChangePct != null && priceChangePct >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {priceChangePct != null ? `${priceChangePct.toFixed(2)}%` : "--"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">VWAP</span>
+                  <span className="font-semibold tabular-nums">{vwap != null ? `$${vwap.toFixed(2)}` : "--"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Trades (shown)</span>
+                  <span className="font-semibold tabular-nums">{trades.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Mid / Spread</span>
+                  <span className="font-semibold tabular-nums">
+                    {mid != null && spread != null ? `$${mid.toFixed(2)} / $${spread.toFixed(2)}` : "--"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">OB Imbalance</span>
+                  <span className="font-semibold tabular-nums">
+                    {obImbalance != null ? `${(obImbalance * 100).toFixed(1)}%` : "--"}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Depth (Top 10×2)</span>
+                  <span className="font-semibold tabular-nums">{liquidityDepth}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">Recent Volatility</span>
+                  <span className="font-semibold tabular-nums">{recentVol != null ? recentVol.toFixed(3) : "--"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">All-Time High</span>
+                  <span className="font-semibold tabular-nums">{allTimeHigh != null ? `$${allTimeHigh.toFixed(2)}` : "--"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500">All-Time Low</span>
+                  <span className="font-semibold tabular-nums">{allTimeLow != null ? `$${allTimeLow.toFixed(2)}` : "--"}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
       </div>
-
 
       {/* Dark Mode Toggle */}
       <button
@@ -759,19 +851,20 @@ export default function SimulationDashboard() {
         {darkMode ? "☀️" : "🌙"}
       </button>
 
-      {/* Participation Toggle */}
-      <button
-        onClick={toggleParticipation}
-        className={`fixed bottom-4 left-4 px-3 h-10 rounded-full border shadow-lg transition-opacity z-10
-          ${userParticipation
-        ? "bg-green-600 text-white border-green-700 hover:opacity-90"
-        : "bg-zinc-200 text-zinc-900 border-zinc-300 hover:opacity-90 dark:bg-zinc-800 dark:text-white dark:border-zinc-700"}`}
-        aria-label="Toggle user participation"
-        title="Toggle user participation"
-      >
-        {userParticipation ? "User: ON" : "User: OFF"}
-      </button>
-
+      {/* Participation Toggle — hidden when play=false */}
+      {playMode && (
+        <button
+          onClick={toggleParticipation}
+          className={`fixed bottom-4 left-4 px-3 h-10 rounded-full border shadow-lg transition-opacity z-10
+            ${userParticipation
+          ? "bg-green-600 text-white border-green-700 hover:opacity-90"
+          : "bg-zinc-200 text-zinc-900 border-zinc-300 hover:opacity-90 dark:bg-zinc-800 dark:text-white dark:border-zinc-700"}`}
+          aria-label="Toggle user participation"
+          title="Toggle user participation"
+        >
+          {userParticipation ? "User: ON" : "User: OFF"}
+        </button>
+      )}
 
       {/* Trader Detail Modal */}
       <Modal

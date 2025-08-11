@@ -5,32 +5,16 @@ from pydantic import BaseModel
 from sim.market import Market
 from sim.models import MarketConfig
 from sim.orderbook import Order
+from utils.token import encode_sim_token, decode_sim_token
 from typing import List
 import os
 
 app = FastAPI()
 
-def origins_from_env() -> List[str]:
-    base = [
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-
-        "https://aitradingsim.com",
-        "https://www.aitradingsim.com",
-        "http://aitradingsim.com",
-        "http://www.aitradingsim.com",
-    ]
-    extra = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
-    # de-dup while preserving order
-    return list(dict.fromkeys(base + extra))
-
-ALLOWED_ORIGINS = origins_from_env()
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,      
+    allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -49,13 +33,31 @@ def health():
 
 @app.post("/init")
 def init_market(config: MarketConfig):
+    cfg = config.model_dump()
+    token = encode_sim_token(cfg)
+    global market
+    market = Market(config)
+    print(config)
+    return {"status": "initialized", "token": token}
+
+@app.post("/import")
+def import_from_token(payload: dict):
     """
     Ensure MarketConfig includes any extra fields you send,
     e.g., allow_short_selling: bool | None = None
     """
-    global market
-    market = Market(config)
-    return {"status": "initialized"}
+    try:
+        token = payload['token']
+        cfg = decode_sim_token(token)
+        market_config = MarketConfig(**cfg)
+        global market
+        market = Market(market_config)
+        return {"status": "initialized"}
+    
+    except Exception as e:
+        return {"status": "error", "message": "Invalid token."}
+
+
 
 @app.websocket("/ws")
 async def market_stream(websocket: WebSocket):
@@ -89,3 +91,4 @@ async def user_trade(order: ExternalOrder):
     )
     market.orderbook.add_order(order_obj)
     return {"status": "Order submitted", "order": order}
+    
