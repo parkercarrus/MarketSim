@@ -60,9 +60,6 @@ class Trader(BaseTrader):  # Inherit from base.py's Trader
 
         self.type = "rl"
 
-    # -----------------------------
-    # Network (dueling head) utils
-    # -----------------------------
     def _build_dueling_net(self, in_dim, hid, out_dim):
         rng = self.np_rng  # seeded
         return {
@@ -74,7 +71,6 @@ class Trader(BaseTrader):  # Inherit from base.py's Trader
             'ba': np.zeros(out_dim),
         }
 
-    # --- margin helpers used by Market ---
     def equity(self, mid_px: float) -> float:
         return float(self.balance + self.assets * mid_px)
 

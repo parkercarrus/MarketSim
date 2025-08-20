@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Literal, Union
+import numpy as np
 
 # Common fields
 class BaseTraderConfig(BaseModel):

@@ -1,16 +1,14 @@
 from .RL import Trader as RLTrader
 from .MeanReversion import MeanReversionTrader
 from .Momentum import MomentumTrader
-from sim.models import TraderSpec
-
-
+from marketsim.core.models import TraderSpec
 
 REGISTRY = {
-    "rl": RLTrader,  # your class
+    "rl": RLTrader,
     "momentum": MomentumTrader,
     "mean_reversion": MeanReversionTrader,
 }
 
 def make_trader(cfg: TraderSpec):
     cls = REGISTRY[cfg.type]
-    return cls(cfg)  # each class accepts its own config subtype
+    return cls(cfg)

@@ -6,7 +6,7 @@ class Order:
     __slots__ = ("trader_id", "type", "price", "quantity", "time_step")
     def __init__(self, trader_id: str, order_type: str, price: float, quantity: int, time_step: int):
         self.trader_id = trader_id
-        self.type = order_type  # "buy" | "sell"
+        self.type = order_type 
         self.price = float(price)
         self.quantity = int(quantity)
         self.time_step = int(time_step)
@@ -75,16 +75,13 @@ class OrderBook:
         heappop = heapq.heappop
 
         while buys and sells:
-            best_buy = buys[0][3]   # (-price, time, seq, order)
-            best_sell = sells[0][3] # ( price, time, seq, order)
+            best_buy = buys[0][3]  
+            best_sell = sells[0][3]
 
             if best_buy.price >= best_sell.price:
-                # Price-time: many venues trade at resting order price; you had mid-price,
-                # so keep mid to maintain behavior.
                 trade_price = (best_buy.price + best_sell.price) * 0.5
                 trade_qty = best_buy.quantity if best_buy.quantity < best_sell.quantity else best_sell.quantity
 
-                # Use the later of the two times as the trade time (your previous behavior)
                 trade_time = best_buy.time_step if best_buy.time_step >= best_sell.time_step else best_sell.time_step
 
                 trades.append({

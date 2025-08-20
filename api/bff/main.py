@@ -1,21 +1,18 @@
 import asyncio
 from typing import List, Optional
-
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from marketsim.core.market import Market
+from marketsim.core.models import MarketConfig
+from marketsim.core.orderbook import Order
+from marketsim.utils.token import encode_sim_token, decode_sim_token
 
-from sim.market import Market
-from sim.models import MarketConfig
-from sim.orderbook import Order
-from utils.token import encode_sim_token, decode_sim_token
-
-# ── App & CORS ─────────────────────────────────────────────────────────────────
 app = FastAPI()
 
 ALLOWED_ORIGINS: List[str] = [
-    "https://aitradingsim.com",  # prod (same-origin behind Caddy)
-    "http://localhost:3000",     # local dev (Next.js)
+    "https://aitradingsim.com",
+    "http://localhost:3000",
 ]
 app.add_middleware(
     CORSMiddleware,
@@ -25,17 +22,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Global market instance (simple dev setup)
 market: Optional[Market] = None
 
-# ── Models ─────────────────────────────────────────────────────────────────────
 class ExternalOrder(BaseModel):
     trader_id: str
     type: str
     price: float
     quantity: int
 
-# ── HTTP API (mounted under /api so Caddy can proxy /api/*) ───────────────────
 from fastapi import APIRouter
 api = APIRouter(prefix="/api")
 
@@ -53,9 +47,6 @@ def init_market(config: MarketConfig):
 
 @api.post("/import")
 def import_from_token(payload: dict):
-    """
-    Expect: {"token": "<...>"}  (compatible with encode_sim_token/decode_sim_token)
-    """
     try:
         token = payload["token"]
         cfg = decode_sim_token(token)
@@ -89,7 +80,6 @@ def user_trade(order: ExternalOrder):
 
 app.include_router(api)
 
-# ── WebSocket (kept at /ws; CORS middleware does not apply to WS) ─────────────
 @app.websocket("/ws")
 async def market_stream(websocket: WebSocket):
     await websocket.accept()

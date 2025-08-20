@@ -1,0 +1,3 @@
+sim.aitradingsim.com {
+    reverse_proxy sim:8000
+}
