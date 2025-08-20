@@ -1,11 +1,12 @@
 version: "3.9"
 services:
   sim:
-    build: ../api/sim_api
+    build:
+      context: ..
+      dockerfile: api/sim_api/Dockerfile
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=info
     networks: [web]
 
   caddy:
