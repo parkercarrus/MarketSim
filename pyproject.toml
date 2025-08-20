@@ -6,4 +6,25 @@ build-backend = "setuptools.build_meta"
 name = "marketsim"
 version = "0.1.0"
 requires-python = ">=3.11"
-description = "Lightweight market simulator with heterogenous traders"
+description = "Lightweight market simulator with heterogeneous traders"
+readme = "README.md"
+authors = [{ name = "Parker Carrus" }]
+license = { text = "MIT" }
+
+dependencies = [
+  "pydantic>=2.6",
+  "numpy>=1.26",
+  "pandas>=2.2",
+]
+
+[project.web-dependencies]
+api = [
+  "fastapi>=0.112",
+  "uvicorn[standard]>=0.30",
+  "orjson>=3.10",
+  "pydantic-settings>=2.3",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["marketsim*"]
