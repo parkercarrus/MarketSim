@@ -25,7 +25,6 @@ api = [
   "fastapi>=0.112",
   "uvicorn[standard]>=0.30",
   "pydantic-settings>=2.3",
-  # (no need to repeat numpy/orjson here—they’re in core deps)
 ]
 
 [tool.setuptools.packages.find]
