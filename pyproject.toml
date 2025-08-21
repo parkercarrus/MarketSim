@@ -5,27 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "marketsim"
 version = "0.1.0"
-requires-python = ">=3.11"
 description = "Lightweight market simulator with heterogeneous traders"
 readme = "README.md"
+requires-python = ">=3.11"
 authors = [{ name = "Parker Carrus" }]
 license = { text = "MIT" }
 
+# Core libs used by your package code
 dependencies = [
   "pydantic>=2.6",
   "numpy>=1.26",
   "pandas>=2.2",
+  "orjson>=3.10",
 ]
 
-[project.web-dependencies]
+# What used to be `[project.web-dependencies]` goes here
+[project.optional-dependencies]
 api = [
   "fastapi>=0.112",
   "uvicorn[standard]>=0.30",
-  "orjson>=3.10",
   "pydantic-settings>=2.3",
-  "numpy"
+  # (no need to repeat numpy/orjson here—they’re in core deps)
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["marketsim*"]
+include = ["marketsim*", "api*"]  # include your API package too
