@@ -29,7 +29,6 @@ def simulate(payload: SimPayload):
 
     # run sim
     res = execute.run(market, payload.ticks)
-    res.process_results()
 
     res.process_results()
     payload = res.results
