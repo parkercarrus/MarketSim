@@ -23,6 +23,7 @@ api = [
   "uvicorn[standard]>=0.30",
   "orjson>=3.10",
   "pydantic-settings>=2.3",
+  "numpy"
 ]
 
 [tool.setuptools.packages.find]
