@@ -116,7 +116,7 @@ svc = MarketService()
 
 @api.get("/health")
 def health():
-    return {"status": "i love u elizabeth"}
+    return {"status": "ok"}
 
 @api.post("/init")
 async def init_market(config: MarketConfig):
