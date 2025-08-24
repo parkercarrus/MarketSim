@@ -25,6 +25,12 @@ api = [
   "pydantic-settings>=2.3",
 ]
 
+bff = [
+  fastapi>=0.112
+  uvicorn[standard]>=0.30
+  pydantic>=2.6
+]
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["marketsim*", "api*"]  # include your API package too
