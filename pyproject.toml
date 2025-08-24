@@ -15,22 +15,22 @@ dependencies = [
   "pydantic>=2.6",
   "numpy>=1.26",
   "pandas>=2.2",
-  "orjson>=3.10",
+  "orjson>=3.10"
 ]
 
 [project.optional-dependencies]
 api = [
   "fastapi>=0.112",
   "uvicorn[standard]>=0.30",
-  "pydantic-settings>=2.3",
+  "pydantic-settings>=2.3"
 ]
 
 bff = [
-  fastapi>=0.112
-  uvicorn[standard]>=0.30
-  pydantic>=2.6
+  "fastapi>=0.112",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.6"
 ]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["marketsim*", "api*"]  # include your API package too
+include = ["marketsim*", "api*"]
