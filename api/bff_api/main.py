@@ -114,7 +114,6 @@ class MarketService:
 
 svc = MarketService()
 
-# ---- HTTP routes ----
 @api.get("/health")
 def health():
     return {"status": "ok"}
