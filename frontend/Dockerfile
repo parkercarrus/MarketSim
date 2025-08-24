@@ -14,8 +14,6 @@ ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 ENV NEXT_DISABLE_ESLINT_PLUGIN=true
 RUN npm run build && npm prune --production
 
-RUN npm run build && npm prune --production
-
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
