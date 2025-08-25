@@ -14,7 +14,7 @@ export default function Home() {
   // typewriter
   useEffect(() => {
     let i = 0;
-    const speed = 28;
+    const speed = 20;
     const id = setInterval(() => {
       i++;
       setTyped(TITLE.slice(0, i));
