@@ -1,90 +1,55 @@
 # MarketSim
 
-**MarketSim** is a flexible and extensible market simulation framework designed to model, analyze, and visualize the dynamics of financial markets. Whether you're a researcher, educator, or hobbyist, MarketSim provides the tools you need to simulate trading strategies, market microstructure, and price discovery in realistic environments.
+**MarketSim** is a cutting-edge market simulation platform focused on the study of **reinforcement learning (RL) traders** and the **emergent dynamics** that arise from their interactions. Watch RL agents adapt, compete, and shape markets in real time.
 
 ---
 
-🚀 **[Live Demo Available at aitradingsim.com](https://aitradingsim.com)**
+🚀 **[Explore the Live Simulation at aitradingsim.com](https://aitradingsim.com)**
 
-Experience MarketSim in action! Visit our live website to interact with real-time market simulations, experiment with trading strategies, and explore all features directly in your browser.
+Visit our live site to interact with real-time simulations, experiment with RL trader types, and visualize complex market behaviors—no setup required.
 
 ---
 
-## Features
+## Highlights
 
-- **Agent-Based Simulation**: Model the interactions of buyers, sellers, and market makers.
-- **Customizable Market Rules**: Define your own order matching algorithms, fee structures, and asset types.
-- **Plug-in Strategies**: Implement and test a wide range of trading strategies.
-- **Data Export & Visualization**: Output simulation data for analysis and visualize market trends in real-time.
-- **Extensible Architecture**: Easily add new agents, assets, or market behaviors.
-- **Batch Simulation**: Run multiple experiments for robust statistical analysis.
+- **Reinforcement Learning Traders:**  
+  Simulate agents powered by RL, learning and evolving strategies directly in the market.
+- **Emergent Dynamics:**  
+  Observe bubbles, crashes, liquidity events, and other phenomena arising naturally from agent interactions.
+- **Interactive Visualization:**  
+  Track market trends, agent behaviors, and performance through real-time dashboards.
+- **Rich Agent Ecosystem:**  
+  Explore markets with a mix of random, rule-based, and RL-driven traders.
 
-## Getting Started
+---
 
-### Prerequisites
+## Try It Now
 
-- [Python 3.8+](https://www.python.org/) (or specify your main language here)
-- (Optional) [Jupyter Notebook](https://jupyter.org/) for interactive analysis
-- Additional dependencies listed in `requirements.txt`
+No installation or coding required—just visit **[aitradingsim.com](https://aitradingsim.com)** to:
 
-### Installation
+- Watch RL agents learn and adapt in real time
+- Experiment with agent settings and market parameters
+- Explore interactive tutorials and educational content
 
-```bash
-git clone https://github.com/yourusername/MarketSim.git
-cd MarketSim
-pip install -r requirements.txt
-```
-
-### Quick Start
-
-```python
-from marketsim import Market, Agent, run_simulation
-
-# Create a market
-market = Market()
-
-# Add agents
-market.add_agent(Agent("TraderA", strategy="random"))
-market.add_agent(Agent("TraderB", strategy="mean_reversion"))
-
-# Run the simulation
-results = run_simulation(market, steps=1000)
-
-# Analyze results
-market.plot_price()
-```
-
-_For more examples, see the [`examples/`](examples/) directory._
+---
 
 ## Documentation
 
-Full documentation is available at [https://yourusername.github.io/MarketSim](https://yourusername.github.io/MarketSim) (update with your doc link).
-
-- [API Reference](docs/API.md)
-- [Tutorials](docs/tutorials/)
-- [Contributing Guide](CONTRIBUTING.md)
-
-## Use Cases
-
-- Academic research in finance and economics
-- Testing and benchmarking algorithmic trading strategies
-- Educational demonstrations of market dynamics
-- Synthetic data generation for machine learning
-
-## Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-## Contact
-
-Questions, suggestions, or feedback? Open an [issue](https://github.com/yourusername/MarketSim/issues) or email us at [your.email@example.com](mailto:your.email@example.com).
+- [Overview & Concepts](docs/overview.md)
+- [Agent Architecture](docs/agents.md)
+- [RL Algorithms](docs/rl.md)
+- [Emergent Behaviors](docs/emergence.md)
 
 ---
 
-**MarketSim** – Simulate. Analyze. Innovate.
+## License
 
-**Try it now at [aitradingsim.com](https://aitradingsim.com)!**
+MIT License. See [LICENSE](LICENSE) for details.
+
+## Contact
+
+Questions or feedback? Open an [issue](https://github.com/yourusername/MarketSim/issues).
+
+---
+
+**MarketSim** – Where learning agents make the market.
