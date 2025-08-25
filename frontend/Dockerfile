@@ -1,25 +1,35 @@
+# ---- Build stage ----
 FROM node:20-alpine AS build
 WORKDIR /app
+
+RUN apk add --no-cache libc6-compat
+
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY . .
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_WS_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
-ARG NEXT_PUBLIC_API_URL
-ARG NEXT_PUBLIC_WS_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
-ENV NEXT_DISABLE_ESLINT_PLUGIN=true
-RUN npm run build && npm prune --production
 
-FROM node:20-alpine
+COPY . .
+
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL}
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_DISABLE_ESLINT_PLUGIN=true
+
+RUN npm run build
+
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=build /app/package.json ./
-COPY --from=build /app/.next ./.next
+ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
+USER nextjs
+
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
-COPY --from=build /app/node_modules ./node_modules
+
 EXPOSE 3000
-CMD ["npm", "run", "start", "--", "-p", "3000", "-H", "0.0.0.0"]
+CMD ["node", "server.js"]
