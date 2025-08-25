@@ -865,7 +865,7 @@ export default function SimulationDashboard() {
           {userParticipation ? "User: ON" : "User: OFF"}
         </button>
       )}
-
+      
       {/* Trader Detail Modal */}
       <Modal
         open={traderModalOpen && !!selectedTraderId}
