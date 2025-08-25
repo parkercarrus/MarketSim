@@ -3,3 +3,10 @@ uvicorn[standard]
 pydantic
 numpy
 python-dotenv
+
+docker build \
+  -f frontend/Dockerfile \
+  -t frontend:latest \
+  --build-arg NEXT_PUBLIC_API_URL="https://aitradingsim.com/api" \
+  --build-arg NEXT_PUBLIC_WS_URL="ws://aitradingsim.com/ws" \
+  ./frontend
