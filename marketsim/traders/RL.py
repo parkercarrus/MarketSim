@@ -1,34 +1,33 @@
 from collections import deque
 import numpy as np
 import random
-from .base import Trader as BaseTrader  # Import the base class
+from .base import Trader as BaseTrader 
 
 def huber_loss_grad(error, delta=1.0):
     return np.clip(error, -delta, delta)
 
-class Trader(BaseTrader):  # Inherit from base.py's Trader
+class Trader(BaseTrader):
     def __init__(self, config):
-        super().__init__(config)  # sets self.random_state in BaseTrader
+        super().__init__(config) 
 
         # seed RNGs by random_state
         random_state = getattr(config, "random_state")
         self.np_rng = np.random.default_rng(random_state)
         self.py_rng = random.Random(random_state)
 
-        # --- RL-specific hyperparams and setup ---
+        # RL-specific hyperparams and setup
         self.performance_history = []
 
         # Shorting
         self.shorting_enabled = getattr(config, "shorting_enabled", True)
 
-        # Cost basis for current signed position (None if flat)
         self.avg_entry_price = None
         self.max_short_units = getattr(config, "max_short_units", 50)
 
         self.trades_won  = 0
         self.trades_lost = 0
 
-        # --- RL hyperparams ---
+        # RL hyperparams 
         self.risk_aversion     = config.risk_aversion
         self.learning_rate     = config.learning_rate
         self.discount_factor   = config.gamma
@@ -36,7 +35,7 @@ class Trader(BaseTrader):  # Inherit from base.py's Trader
         self.exploration_decay = getattr(config, "epsilon_decay", 0.995)
         self.min_exploration   = getattr(config, "epsilon_min", 0.01)
 
-        # --- Model / training setup ---
+        # Model / training setup
         self.state_size  = getattr(config, "state_size", 8)
         self.qty_bins    = getattr(config, "qty_bins", [1, 2, 5])
         self.pct_bins    = getattr(config, "pct_bins", [0.002, 0.005, 0.01])
@@ -126,9 +125,6 @@ class Trader(BaseTrader):  # Inherit from base.py's Trader
         net['Wa'] -= lr * dWa
         net['ba'] -= lr * dba
 
-    # -----------------------------
-    # State & action processing
-    # -----------------------------
     def _normalize(self, x, scale):
         return (x / scale) if scale != 0 else 0.0
 
@@ -198,9 +194,7 @@ class Trader(BaseTrader):  # Inherit from base.py's Trader
             size = int(max(1, base * (0.3 + 0.7 * self.risk_aversion)))
             return {'type': 'sell', 'quantity': size, 'price': price}
 
-    # -----------------------------
     # Policy & training
-    # -----------------------------
     def act(self, obs):
         state = self._observation_to_state(obs)
         self.last_state = state
@@ -251,9 +245,7 @@ class Trader(BaseTrader):  # Inherit from base.py's Trader
 
         self._soft_update_target()
 
-    # -----------------------------
     # Accounting helpers
-    # -----------------------------
     def calculate_net_worth(self, prices):
         return float(self.balance + self.assets * prices['asset'])
 

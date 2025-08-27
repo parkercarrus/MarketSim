@@ -3,47 +3,34 @@ import numpy as np
 from .base import Trader as BaseTrader
 
 class MomentumTrader(BaseTrader):
-    """
-    Rule-based momentum trader:
-      - Signal = return over short lookback minus return over long lookback
-      - Enter long if signal > entry_threshold
-      - Enter short if signal < -entry_threshold (if shorting enabled)
-      - Hysteresis exit: flatten/flip only when |signal| falls below exit_threshold
-      - Risk-aware sizing; respects cash, long/short caps, and shorting flag
-    Produces the same action dict shape as your RL agent and carries attributes
-    used by Market (avg_entry_price, shorting_enabled, etc.).
-    """
     def __init__(self, config):
         super().__init__(config)
 
-        # ---- accounting fields your Market relies on ----
         self.performance_history = []
         self.shorting_enabled   = getattr(config, "shorting_enabled", True)
         self.avg_entry_price    = None
         self.max_short_units    = getattr(config, "max_short_units", 50)
 
-        # ---- momentum params ----
+        # momentum params
         self.short_lb          = int(getattr(config, "mom_short", 3))
         self.long_lb           = int(getattr(config, "mom_long", 10))
         self.entry_threshold   = float(getattr(config, "entry_threshold", 0.003))   # 0.3% spread
         self.exit_threshold    = float(getattr(config, "exit_threshold", 0.0005))   # 0.05% hysteresis
 
-        # ---- sizing & limits ----
+        # sizing & limits 
         self.base_qty          = int(getattr(config, "base_qty", 2))               # lot size seed
         self.max_long_units    = int(getattr(config, "max_long_units", 50))
         self.max_short_units   = int(getattr(config, "max_short_units", 50))
         self.limit_offset_pct  = float(getattr(config, "limit_offset_pct", 0.002)) # place slightly outside mid
 
-        # reuse risk knobs for sizing
-        self.risk_aversion     = float(getattr(config, "risk_aversion", 0.5))      # 0..1
-        # keep consistent fields with RL trader (even if unused here)
+        self.risk_aversion     = float(getattr(config, "risk_aversion", 0.5))     
         self.learning_rate     = getattr(config, "learning_rate", 0.001)
 
-        self.type = "momentum"   # for UI/telemetry parity
+        self.type = "momentum"   
         self.last_action = {'type': 'hold', 'quantity': 0, 'price': None}
-        self.last_state  = None   # not used, kept for symmetry
+        self.last_state  = None  
 
-    # --- margin helpers used by Market (mirror RL trader) ---
+    # margin helpers used by Market 
     def equity(self, mid_px: float) -> float:
         return float(self.balance + self.assets * mid_px)
 
@@ -53,12 +40,8 @@ class MomentumTrader(BaseTrader):
             return float("inf")
         return self.equity(mid_px) / notional
 
-    # --- internal: compute momentum signal ---
+    # internal: compute momentum signal
     def _signal(self, price_hist):
-        """
-        Return short-minus-long lookback returns.
-        If insufficient history, return 0 to avoid noisy churn.
-        """
         if not price_hist or len(price_hist) <= max(self.short_lb, self.long_lb):
             return 0.0
 
@@ -72,7 +55,7 @@ class MomentumTrader(BaseTrader):
         r_l = (p_now - p_l) / (p_l + 1e-9)
         return float(r_s - r_l)
 
-    # --- internal: risk-aware position sizing ---
+    # internal: risk-aware position sizing
     def _desired_trade(self, obs, signal):
         """
         Decide side and size, respecting:
@@ -87,8 +70,7 @@ class MomentumTrader(BaseTrader):
         bullish = signal > self.entry_threshold
         bearish = signal < -self.entry_threshold
 
-        # soft sizing: larger when conviction higher & risk_aversion lower
-        # map |signal| roughly 0..1 (clamped) and blend with base_qty
+        # soft sizing
         strength = min(1.0, abs(signal) / max(self.entry_threshold, 1e-6))
         size_seed = self.base_qty + int(np.ceil(self.base_qty * strength * (1.0 - 0.6*self.risk_aversion)))
         size_seed = max(1, size_seed)
@@ -101,14 +83,9 @@ class MomentumTrader(BaseTrader):
         # default hold
         return {'type': 'hold', 'quantity': 0, 'price': px}, pos, px
 
-        # NOTE: we'll choose below based on signals; (we return at the end)
+        # NOTE: 
 
     def act(self, obs):
-        """
-        Emit an order dict compatible with Market:
-          {'type': 'buy'|'sell'|'hold', 'quantity': int, 'price': float, 'action_idx': -1}
-        Uses limit prices around mid to help cross a thin spread while avoiding far slippage.
-        """
         if obs is None:
             return {'type': 'hold', 'quantity': 0, 'price': None, 'action_idx': -1}
 
@@ -127,7 +104,7 @@ class MomentumTrader(BaseTrader):
         buy_px  = round(px * (1.0 + self.limit_offset_pct),  2)
         sell_px = round(px * (1.0 - self.limit_offset_pct),  2)
 
-        # sizing (recompute here for clarity)
+        # sizing 
         strength = min(1.0, abs(signal) / max(self.entry_threshold, 1e-6))
         size_seed = self.base_qty + int(np.ceil(self.base_qty * strength * (1.0 - 0.6*self.risk_aversion)))
         size_seed = max(1, size_seed)
@@ -136,17 +113,16 @@ class MomentumTrader(BaseTrader):
         long_room  = max(0, self.max_long_units  - max(0, pos))
         short_room = max(0, self.max_short_units - max(0, -pos))
 
-        # Decision logic with hysteresis and flip handling
         # 1) Bullish: reduce short -> flat -> build long
         if bullish:
             if pos < 0:
                 # Cover shorts first
-                qty = min(size_seed, max_affordable, -pos)  # can’t buy more than we owe or cash allows
+                qty = min(size_seed, max_affordable, -pos) 
                 if qty > 0:
                     action = {'type': 'buy', 'quantity': qty, 'price': buy_px, 'action_idx': -1}
                     self.last_action = action
                     return action
-                # If we can’t cover (no cash), hold
+                # If we can’t cover, hold
                 action = {'type': 'hold', 'quantity': 0, 'price': px, 'action_idx': -1}
                 self.last_action = action
                 return action
@@ -161,7 +137,7 @@ class MomentumTrader(BaseTrader):
                 self.last_action = action
                 return action
 
-        # 2) Bearish: reduce long -> flat -> build short (if enabled)
+        # 2) Bearish: reduce long -> flat -> build short
         if bearish:
             if pos > 0:
                 # Reduce longs first
@@ -206,17 +182,14 @@ class MomentumTrader(BaseTrader):
         self.last_action = action
         return action
 
-    # Rule-based: no learning step needed, but keep API parity
+    # no learning for rule-based trader
     def train(self, *args, **kwargs):
         return
 
-    # -----------------------------
     # Accounting helpers
-    # -----------------------------
     def calculate_net_worth(self, prices):
         return float(self.balance + self.assets * prices['asset'])
 
     def reset(self):
         super().reset()
         self.performance_history = []
-        # keep avg_entry_price; your Market likely updates it during fills

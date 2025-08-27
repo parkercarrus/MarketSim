@@ -1,5 +1,3 @@
-from typing import List, Optional
-from pydantic import BaseModel
 from marketsim.core.market import Market
 from marketsim.core.models import MarketConfig
 from marketsim.simulate.models import ResultsObject
@@ -19,4 +17,3 @@ def run(market: Market, ticks: int) -> ResultsObject:
         data = market.step()
         res.add(data)
     return res
-

@@ -1,43 +1,33 @@
 import numpy as np
-from .base import Trader as BaseTrader  # same base as RL/Momentum
+from .base import Trader as BaseTrader  
 
 class MeanReversionTrader(BaseTrader):
-    """
-    Rule-based mean reverter:
-      - Compute z = (price - MA)/STD over lookback
-      - If z > entry_z -> sell; if z < -entry_z -> buy
-      - Exit/flatten when |z| < exit_z (hysteresis)
-      - Risk-aware sizing; respects cash, long/short caps, shorting flag
-    """
     def __init__(self, config):
         super().__init__(config)
 
-        # --- Market-facing accounting fields (keep parity with your RL trader) ---
         self.performance_history = []
         self.shorting_enabled   = getattr(config, "shorting_enabled", True)
         self.avg_entry_price    = None
         self.max_short_units    = int(getattr(config, "max_short_units", 50))
 
-        # --- signal params ---
+        #  params 
         self.lookback          = int(getattr(config, "mr_lookback", 20))
         self.min_std           = float(getattr(config, "mr_min_std", 1e-3))
         self.entry_z           = float(getattr(config, "mr_entry_z", 1.0))
-        self.exit_z            = float(getattr(config, "mr_exit_z", 0.25))  # hysteresis
+        self.exit_z            = float(getattr(config, "mr_exit_z", 0.25))  
 
-        # --- sizing / limits ---
+        # sizing / limits
         self.base_qty          = int(getattr(config, "base_qty", 2))
         self.max_long_units    = int(getattr(config, "max_long_units", 50))
         self.max_short_units   = int(getattr(config, "max_short_units", 50))
-        self.limit_offset_pct  = float(getattr(config, "limit_offset_pct", 0.002))  # ±0.2% off mid
+        self.limit_offset_pct  = float(getattr(config, "limit_offset_pct", 0.002))  
 
-        # reuse common knobs (for UI + risk scaling)
         self.risk_aversion     = float(getattr(config, "risk_aversion", 0.5))
 
         self.type = "mean_reversion"
         self.last_action = {'type': 'hold', 'quantity': 0, 'price': None}
-        self.last_state  = None  # for parity; unused here
+        self.last_state  = None 
 
-    # --- margin helpers used by Market (mirror RL/Momentum) ---
     def equity(self, mid_px: float) -> float:
         return float(self.balance + self.assets * mid_px)
 
@@ -47,7 +37,6 @@ class MeanReversionTrader(BaseTrader):
             return float("inf")
         return self.equity(mid_px) / notional
 
-    # --- z-score signal ---
     def _zscore(self, price_hist):
         """
         z = (p_now - mean) / std  over last `lookback` prices (incl. now).
@@ -77,7 +66,6 @@ class MeanReversionTrader(BaseTrader):
 
         z = self._zscore(price_hist)
 
-        # mean-revert logic: positive z => above mean => sell; negative z => buy
         want_sell = z > self.entry_z
         want_buy  = z < -self.entry_z
         flatten   = abs(z) < self.exit_z  # hysteresis band
@@ -112,7 +100,7 @@ class MeanReversionTrader(BaseTrader):
             self.last_action = a; return a
 
         if want_sell:
-            # reduce long first, then build short (if enabled)
+            # reduce long first, then build short
             if pos > 0:
                 qty = min(size_seed, pos)
                 if qty > 0:
@@ -144,15 +132,14 @@ class MeanReversionTrader(BaseTrader):
         self.last_action = a
         return a
 
-    # rule-based => no learning
+    # no learning for rule-based traders
     def train(self, *args, **kwargs):
         return
 
-    # --- accounting helpers (parity) ---
+    # accounting helpers
     def calculate_net_worth(self, prices):
         return float(self.balance + self.assets * prices['asset'])
 
     def reset(self):
         super().reset()
         self.performance_history = []
-        # avg_entry_price typically maintained by Market on fills
