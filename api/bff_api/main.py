@@ -32,7 +32,8 @@ class ExternalOrder(BaseModel):
     price: NonNegativeFloat
     quantity: PositiveInt
 
-# ---- Market service: single producer + broadcast ----
+SESSION_LIMIT = 20 * 60  # 20 minutes in seconds
+
 class MarketService:
     def __init__(self):
         self.market: Optional[Market] = None
@@ -41,6 +42,29 @@ class MarketService:
         self._lock = asyncio.Lock()
         self.tick_interval = 0.1  # seconds
         self.running = asyncio.Event()
+        self._session_tasks: dict[WebSocket, asyncio.Task] = {}  # track timers
+
+    async def register_ws(self, ws: WebSocket):
+        await ws.accept()
+        self._clients.add(ws)
+        # start a session timeout countdown
+        self._session_tasks[ws] = asyncio.create_task(self._session_timeout(ws))
+
+    async def unregister_ws(self, ws: WebSocket):
+        self._clients.discard(ws)
+        # cancel timeout task if exists
+        task = self._session_tasks.pop(ws, None)
+        if task:
+            task.cancel()
+
+    async def _session_timeout(self, ws: WebSocket):
+        try:
+            await asyncio.sleep(SESSION_LIMIT)
+            await ws.close(code=1000, reason="Session limit reached (20 minutes)")
+            await self.unregister_ws(ws)
+        except asyncio.CancelledError:
+            # normal cancellation when client disconnects earlier
+            pass
 
     async def init_with_config(self, cfg: MarketConfig) -> str:
         async with self._lock:
