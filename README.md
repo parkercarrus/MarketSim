@@ -1,12 +1,12 @@
 # MarketSim
 
-**MarketSim** is a market simulation platform focused on the study of **reinforcement learning (RL) traders** (and other types) and the **emergent dynamics** that arise from their interactions. Watch RL agents adapt, compete, and shape markets in real time.
+**MarketSim** is a market simulation platform focused on the study of **reinforcement learning (RL) traders** (and other types) and the **emergent dynamics** that arise from their interactions.
 
 ---
 
-🚀 **[Explore the Live Simulation at aitradingsim.com](https://aitradingsim.com)**
+**[Explore the Live Simulation at aitradingsim.com](https://aitradingsim.com)**
 
-Visit the live site to interact with real-time simulations, experiment with RL trader types, and visualize complex market behaviors—no setup required.
+Visit the live site to interact with real-time simulations and visualize complex market behaviors. No setup required.
 
 ---
 
@@ -23,24 +23,6 @@ Visit the live site to interact with real-time simulations, experiment with RL t
 
 ---
 
-## Try It Now
-
-No installation or coding required—just visit **[aitradingsim.com](https://aitradingsim.com)** to:
-
-- Watch RL agents learn and adapt in real time
-- Experiment with agent settings and market parameters
-- Explore interactive tutorials and educational content
-
----
-
-## License
-
-MIT License
-
 ## Contact
 
 Questions or feedback? Reach out to me at carrusparker@gmail.com
-
----
-
-**MarketSim** – Where learning agents make the market.
