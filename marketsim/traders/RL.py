@@ -1,6 +1,7 @@
 from collections import deque
 import numpy as np
 import random
+import pickle
 from .base import Trader as BaseTrader 
 
 def huber_loss_grad(error, delta=1.0):
@@ -247,7 +248,24 @@ class Trader(BaseTrader):
 
     # Accounting helpers
     def calculate_net_worth(self, prices):
-        return float(self.balance + self.assets * prices['asset'])
+        return super().calculate_net_worth(prices)
+
+    def save_model(self, path: str) -> None:
+        payload = {
+            'model': self.model,
+            'target_model': self.target_model,
+            'exploration_rate': self.exploration_rate,
+            'risk_aversion': self.risk_aversion,
+        }
+        with open(path, 'wb') as f:
+            pickle.dump(payload, f)
+
+    def load_model(self, path: str) -> None:
+        with open(path, 'rb') as f:
+            payload = pickle.load(f)
+        self.model = payload.get('model', self.model)
+        self.target_model = payload.get('target_model', self.target_model)
+        self.exploration_rate = float(payload.get('exploration_rate', self.exploration_rate))
 
     def reset(self):
         super().reset()
