@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, ReferenceLine
@@ -39,6 +40,20 @@ const normBookSide = (side: any[]): { price: number; quantity: number }[] =>
         .map((r: any) => ({ price: Number(r.price), quantity: Number(r.quantity) }))
         .filter((r) => Number.isFinite(r.price) && Number.isFinite(r.quantity) && r.quantity > 0)
     : [];
+
+
+const fmtPos = (assets: any): string => {
+  if (typeof assets === "number") return `${assets.toFixed(0)}`;
+  if (assets && typeof assets === "object") {
+    return Object.entries(assets)
+      .slice(0, 3)
+      .map(([k, v]) => `${k}:${Number(v).toFixed(0)}`)
+      .join(" | ");
+  }
+  return "--";
+};
+
+const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
 // -------- modal --------
 function Modal({
@@ -91,6 +106,7 @@ export default function SimulationDashboard() {
   const [orderbook, setOrderbook] = useState<any>({ bids: [], asks: [] });
   const [zoomOut, setZoomOut] = useState(false);
   const [userTraderId, setUserTraderId] = useState<string | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<string>("asset_1");
 
   // NEW: user participation toggle (persisted)
   const [userParticipation, setUserParticipation] = useState<boolean>(() => {
@@ -235,6 +251,13 @@ export default function SimulationDashboard() {
   // latest snapshot
   const latest = fullData.length ? fullData[fullData.length - 1] : null;
   const user = userTraderId ? latest?.traders?.[userTraderId] : null;
+  const strategyTracking = latest?.strategy_tracking ?? {};
+  const liquidityState = latest?.liquidity ?? {};
+  const fundamentals = latest?.fundamentals ?? {};
+  const latestPrices = latest?.prices ?? {};
+  const momentumRecent = strategyTracking?.momentum_recent ?? [];
+  const valueRecent = strategyTracking?.value_recent ?? [];
+  const stratCorr = strategyTracking?.momentum_value_corr;
 
   // sorted best bid/ask
   const sortedBids = normBookSide(orderbook.bids).sort((a, b) => b.price - a.price);
@@ -254,12 +277,40 @@ export default function SimulationDashboard() {
       type: side,
       price,
       quantity: 1,
+      asset_id: selectedAsset,
     };
     fetch(`${API_URL}/user_trade`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(trade),
     }).catch((err) => console.error("User Trade Error:", err));
+  };
+
+  const saveBestRL = async () => {
+    const latestSnap = fullData[fullData.length - 1];
+    if (!latestSnap?.traders) return;
+    const best = Object.entries(latestSnap.traders)
+      .map(([id, t]: any) => ({ id, pnl: Number(t?.pnl ?? -1e18) }))
+      .sort((a, b) => b.pnl - a.pnl)
+      .find((x) => x.id.startsWith("RL-"));
+    if (!best) return;
+    await fetch(`${API_URL}/save_rl`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trader_id: best.id, tag: "best" }),
+    });
+  };
+
+  const loadBestRL = async () => {
+    const latestSnap = fullData[fullData.length - 1];
+    if (!latestSnap?.traders) return;
+    const anyRL = Object.keys(latestSnap.traders).find((x) => x.startsWith("RL-"));
+    if (!anyRL) return;
+    await fetch(`${API_URL}/load_rl`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ trader_id: anyRL, tag: "best" }),
+    });
   };
 
   // chart data
@@ -411,7 +462,7 @@ export default function SimulationDashboard() {
                 {typeof trader.max_drawdown_pct === "number" ? trader.max_drawdown_pct.toFixed(2) : "0.00"}
               </span>
               <span className="whitespace-nowrap">
-                Position: {typeof trader.assets === "number" ? trader.assets.toFixed() : "0.00"}
+                Position: {fmtPos(trader.assets)}
               </span>
             </div>
           );
@@ -489,7 +540,7 @@ export default function SimulationDashboard() {
   const showUserTraderCard = playMode && userParticipation;
 
   return (
-    <main className="min-h-screen bg-white text-black dark:bg-zinc-900 dark:text-white px-6 py-8 font-mono">
+    <main className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50 to-white text-black dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-900 dark:text-white px-6 py-8 font-mono">
       <div
         className={`border rounded-lg p-4 flex justify-between items-end mb-6 bg-white dark:bg-zinc-900 ${
           darkMode ? "border-white" : "border-black"
@@ -564,6 +615,10 @@ export default function SimulationDashboard() {
             </Button>
 
             </div>
+          <div className="ml-2 flex items-center gap-2 text-sm">
+            <span>Asset</span>
+            <Input className="h-8 w-28" value={selectedAsset} onChange={(e) => setSelectedAsset(e.target.value)} />
+          </div>
           <div className="flex-1" />
 
           {/* Chart options */}
@@ -593,6 +648,28 @@ export default function SimulationDashboard() {
           </div>
         </div>
       </div>
+
+
+      <Card className="border-2 border-amber-500/60 bg-amber-100/40 dark:bg-amber-900/20 mb-6">
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap gap-6 items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold">Prosperity Arena HUD</h2>
+              <p className="text-sm opacity-80">Momentum μ: {avg(momentumRecent).toFixed(2)} | Value μ: {avg(valueRecent).toFixed(2)} | Corr: {typeof stratCorr === "number" ? stratCorr.toFixed(3) : "--"}</p>
+              <p className="text-sm opacity-80">Liquidity x{Number(liquidityState?.multiplier ?? 1).toFixed(2)} {liquidityState?.active_shock ? "(Shock Active)" : "(Normal)"}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={saveBestRL} className="bg-purple-600 hover:bg-purple-700 text-white">Save Best RL</Button>
+              <Button onClick={loadBestRL} className="bg-indigo-600 hover:bg-indigo-700 text-white">Load Best RL</Button>
+            </div>
+            <div className="text-sm">
+              {Object.entries(latestPrices).slice(0, 4).map(([k, v]) => (
+                <div key={k}>{k}: ${Number(v).toFixed(2)} | F: ${Number((fundamentals as any)[k] ?? 0).toFixed(2)}</div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Chart */}
       <Card className="border border-black dark:border-white mb-6 bg:white dark:bg-zinc-800">
@@ -754,7 +831,7 @@ export default function SimulationDashboard() {
                 <div>
                   <span className="text-3xl font-bold">Position: </span>
                   <span className="text-3xl font-bold text-green-600 dark:text-green-300">
-                    {typeof user?.assets === "number" ? user.assets : "--"}
+                    {fmtPos(user?.assets)}
                   </span>
                 </div>
               </div>

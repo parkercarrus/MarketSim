@@ -57,6 +57,18 @@ export default function InitializeSimulation() {
   const [initialPrice, setInitialPrice] = useState(100);
   const [initialQuantity, setInitialQuantity] = useState(1000);
 
+  const [numAssets, setNumAssets] = useState(3);
+
+  const buildAssets = () =>
+    Array.from({ length: numAssets }, (_, i) => ({
+      id: `asset_${i + 1}`,
+      initial_price: clampNum(initialPrice, 1) + i * 5,
+      initial_fundamental: clampNum(initialPrice, 1) + i * 5,
+      fundamental_drift: randomInRange(-0.05, 0.05, 4),
+      fundamental_volatility: randomInRange(0.1, 1.2, 3),
+      price_impact: randomInRange(0.0003, 0.002, 5),
+    }));
+
   // user trader
   const [userId, setUserId] = useState("PARKER");
   const [userBalance, setUserBalance] = useState(1000);
@@ -234,6 +246,8 @@ export default function InitializeSimulation() {
       allow_short_selling: allowShortSelling,
       short_selling_enabled: allowShortSelling,
       traders: payloadTraders,
+      assets: buildAssets(),
+      liquidity_shock: { enabled: true, probability: 0.02, intensity: 0.65, recovery_halflife: 30 },
     });
 
     const res = await fetch(`${API_URL}/init`, {
